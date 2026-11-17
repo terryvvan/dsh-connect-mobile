@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DSH 文件传输</title>
+<style>
+  :root{
+    --bg:#0e1118;--surface:#171b24;--surface2:#1d222d;--line:rgba(255,255,255,.09);
+    --text:#eef1f7;--muted:#8b93a5;--accent:#6d8cff;--good:#46e0c8;--danger:#ff8b9b;
+    --mono:ui-monospace,SFMono-Regular,Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:radial-gradient(900px 500px at 20% -10%,#1b2440,transparent 60%),var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  .app{max-width:860px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:0 0 calc(24px + env(safe-area-inset-bottom))}
+  header{position:sticky;top:0;z-index:5;padding:calc(16px + env(safe-area-inset-top)) 18px 12px;background:linear-gradient(180deg,rgba(14,17,24,.96),rgba(14,17,24,.82));backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#6d8cff,#46e0c8);display:grid;place-items:center;color:#081018;font-weight:800;font-size:17px}
+  h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px;font:12px/1.5 var(--mono);color:var(--muted)}
+  .crumb button{border:0;background:none;color:var(--accent);font:inherit;cursor:pointer;padding:2px 4px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button.btn{border:1px solid var(--line);border-radius:11px;padding:9px 13px;background:var(--surface2);color:var(--text);font-size:13px;cursor:pointer;min-height:40px}
+  button.btn:hover{border-color:rgba(109,140,255,.45)}
+  button.primary{border:0;background:linear-gradient(135deg,#6d8cff,#46e0c8);color:#081018;font-weight:650}
+  main{flex:1;padding:14px 18px 0}
+  .drop{border:1px dashed rgba(109,140,255,.38);border-radius:16px;padding:14px;background:rgba(109,140,255,.05);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .drop .t{font-size:13px}
+  .drop .s{color:var(--muted);font-size:12px;margin-top:2px}
+  .list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}
+  .ico{width:36px;height:36px;border-radius:10px;background:var(--surface2);display:grid;place-items:center;font-size:17px;flex:0 0 auto}
+  .meta{flex:1;min-width:0}
+  .name{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m{color:var(--muted);font:11px/1.5 var(--mono);margin-top:2px}
+  .act{display:flex;gap:6px;flex:0 0 auto}
+  .act button{border:0;background:transparent;color:var(--accent);font-size:12px;cursor:pointer;padding:8px}
+  .act button.del{color:var(--danger)}
+  .empty{padding:36px 12px;text-align:center;color:var(--muted);font-size:13px}
+  .progress{height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;display:none;margin-top:12px}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6d8cff,#46e0c8)}
+  .status{min-height:18px;color:var(--good);font-size:12px;margin-top:8px}
+  .status.bad{color:var(--danger)}
+  .foot{color:var(--muted);font-size:11px;line-height:1.7;padding:18px 2px 0}
+  .hidden{display:none}
+  @media (max-width:520px){h1{font-size:16px}.app{padding-left:0;padding-right:0}header{padding-left:14px;padding-right:14px}main{padding-left:14px;padding-right:14px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">D</div>
+      <div><h1>DSH 文件传输</h1><div class="sub">手机 ↔ 电脑 · 同一 bridge 内网/隧道</div></div>
+    </div>
+    <div class="crumb" id="crumb"></div>
+    <div class="toolbar">
+      <button class="btn primary" id="uploadBtn">上传文件</button>
+      <button class="btn" id="mkdirBtn">新建文件夹</button>
+      <button class="btn" id="refreshBtn">刷新</button>
+    </div>
+    <div class="progress" id="progress"><i></i></div>
+    <div class="status" id="status"></div>
+  </header>
+  <main>
+    <div class="drop">
+      <div><div class="t">从手机选择文件上传到电脑</div><div class="s">也可以把文件拖到这里（桌面浏览器）</div></div>
+      <button class="btn" id="pickBtn">选择文件</button>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="foot">文件保存在电脑 bridge 配置的目录；手机下载的文件进入系统「下载」目录。上传大小上限 1 GB。</div>
+  </main>
+</div>
+<input type="file" id="fileInput" class="hidden" multiple>
+<script>
+(function(){
+  var dir = '';
+  var statusEl = document.getElementById('status');
+  var listEl = document.getElementById('list');
+  var crumbEl = document.getElementById('crumb');
+  var progressEl = document.getElementById('progress');
+  var bar = progressEl.querySelector('i');
+  var fileInput = document.getElementById('fileInput');
+
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function human(n){ if(n>=1073741824) return (n/1073741824).toFixed(2)+' GB'; if(n>=1048576) return (n/1048576).toFixed(1)+' MB'; if(n>=1024) return Math.round(n/1024)+' KB'; return n+' B'; }
+  function fmt(t){ try{ var d=new Date(t); return d.toLocaleString(); }catch(e){ return ''; } }
+  function setStatus(t,bad){ statusEl.textContent=t||''; statusEl.className='status'+(bad?' bad':''); }
+  function enc(v){ return encodeURIComponent(v||''); }
+  function join(a,b){ return a ? (a.replace(/\/+$/,'')+'/'+b) : b; }
+
+  async function load(){
+    setStatus('正在读取…');
+    try{
+      var r = await fetch('/__dshm/files/list?dir='+enc(dir), {cache:'no-store'});
+      var j = await r.json();
+      if(!r.ok || !j.ok) throw new Error(j.error||('HTTP '+r.status));
+      dir = j.dir || '';
+      render(j);
+      setStatus('');
+    }catch(e){ setStatus('读取失败：'+e.message, true); }
+  }
+
+  function render(j){
+    crumbEl.innerHTML = '';
+    var root = document.createElement('button'); root.textContent='根目录'; root.onclick=function(){ dir=''; load(); };
+    crumbEl.appendChild(root);
+    var parts = (j.dir||'').split('/').filter(Boolean);
+    var acc = '';
+    parts.forEach(function(p){
+      acc = join(acc,p);
+      var sep = document.createElement('span'); sep.textContent='/'; crumbEl.appendChild(sep);
+      var b = document.createElement('button'); b.textContent=p; b.onclick=function(){ dir=acc; load(); }; crumbEl.appendChild(b);
+    });
+    var crumbPath = document.createElement('span'); crumbPath.textContent=j.root||''; crumbPath.style.marginLeft='6px'; crumbPath.style.opacity='.55'; crumbEl.appendChild(crumbPath);
+
+    listEl.innerHTML='';
+    if(j.parent !== null && j.parent !== undefined){
+      var up = document.createElement('div'); up.className='row';
+      up.innerHTML='<div class="ico">↰</div><div class="meta"><div class="name">上一级</div><div class="m">返回</div></div>';
+      up.onclick=function(){ dir=j.parent; load(); }; listEl.appendChild(up);
+    }
+    (j.entries||[]).forEach(function(e){
+      var row = document.createElement('div'); row.className='row';
+      var ico = document.createElement('div'); ico.className='ico'; ico.textContent=e.isDir?'📁':'📄';
+      var meta = document.createElement('div'); meta.className='meta';
+      var name = document.createElement('div'); name.className='name'; name.textContent=e.name;
+      var m = document.createElement('div'); m.className='m'; m.textContent=(e.isDir?'文件夹':human(e.size))+' · '+fmt(e.mtime);
+      meta.appendChild(name); meta.appendChild(m);
+      var act = document.createElement('div'); act.className='act';
+      if(e.isDir){
+        var open=document.createElement('button'); open.textContent='打开'; open.onclick=function(){ dir=e.path; load(); }; act.appendChild(open);
+      }else{
+        var dl=document.createElement('a'); dl.textContent='下载'; dl.href='/__dshm/files/download?path='+enc(e.path); dl.style.cssText='color:var(--accent);font-size:12px;padding:8px;text-decoration:none'; act.appendChild(dl);
+      }
+      var del=document.createElement('button'); del.className='del'; del.textContent='删除'; del.onclick=async function(){
+        if(!confirm('删除「'+e.name+'」？')) return;
+        try{
+          var r=await fetch('/__dshm/files/delete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:e.path})});
+          var j2=await r.json(); if(!r.ok||!j2.ok) throw new Error(j2.error||('HTTP '+r.status));
+          load();
+        }catch(err){ setStatus('删除失败：'+err.message,true); }
+      }; act.appendChild(del);
+      row.appendChild(ico); row.appendChild(meta); row.appendChild(act);
+      listEl.appendChild(row);
+    });
+    if(!j.entries || !j.entries.length){
+      var empty=document.createElement('div'); empty.className='empty'; empty.textContent='这个文件夹还是空的'; listEl.appendChild(empty);
+    }
+  }
+
+  function upload(files){
+    if(!files || !files.length) return;
+    progressEl.style.display='block'; bar.style.width='0%';
+    var total=files.length, done=0;
+    setStatus('正在上传 0/'+total+'…');
+    var i=0;
+    function next(){
+      if(i>=files.length){ progressEl.style.display='none'; setStatus('上传完成：'+total+' 个文件'); load(); return; }
+      var f=files[i++];
+      var xhr=new XMLHttpRequest();
+      xhr.open('POST','/__dshm/files/upload?dir='+enc(dir)+'&name='+enc(f.name));
+      xhr.upload.onprogress=function(ev){ if(ev.lengthComputable){ bar.style.width=Math.round(ev.loaded/ev.total*100)+'%'; } };
+      xhr.onload=function(){
+        if(xhr.status>=200 && xhr.status<300){ done++; setStatus('正在上传 '+done+'/'+total+'…'); next(); }
+        else { setStatus('上传失败：'+(xhr.responseText||('HTTP '+xhr.status)), true); progressEl.style.display='none'; }
+      };
+      xhr.onerror=function(){ setStatus('上传网络错误', true); progressEl.style.display='none'; };
+      xhr.send(f);
+    }
+    next();
+  }
+
+  document.getElementById('uploadBtn').onclick=function(){ fileInput.click(); };
+  document.getElementById('pickBtn').onclick=function(){ fileInput.click(); };
+  fileInput.onchange=function(){ upload(fileInput.files); fileInput.value=''; };
+  document.getElementById('refreshBtn').onclick=load;
+  document.getElementById('mkdirBtn').onclick=async function(){
+    var name=prompt('新文件夹名称'); if(!name) return;
+    try{
+      var r=await fetch('/__dshm/files/mkdir',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dir:dir,name:name})});
+      var j=await r.json(); if(!r.ok||!j.ok) throw new Error(j.error||('HTTP '+r.status));
+      load();
+    }catch(e){ setStatus('新建失败：'+e.message, true); }
+  };
+  var drop=document.querySelector('.drop');
+  ['dragenter','dragover'].forEach(function(t){ drop.addEventListener(t,function(e){ e.preventDefault(); drop.style.borderColor='var(--accent)'; }); });
+  ['dragleave','drop'].forEach(function(t){ drop.addEventListener(t,function(e){ e.preventDefault(); drop.style.borderColor='rgba(109,140,255,.38)'; }); });
+  drop.addEventListener('drop',function(e){ if(e.dataTransfer && e.dataTransfer.files) upload(e.dataTransfer.files); });
+  load();
+})();
+</script>
+</body>
+</html>

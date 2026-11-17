@@ -1,0 +1,15 @@
+# dsh-connect-mobile — profile layer patch.
+#
+# 让本插件成为 profile 的一个「层」：把 dsh-connect-mobile 追加进 profile
+# package.json 的 dsh.profile.bundles 后，cordis 会按本文件把插件行挂上去。
+#
+# 注意：顶层裸条目会被当作「覆盖已有条目」而报 patch: entry "x" not found，
+# 新增条目必须包在 `- insert:` 里。
+- insert:
+    - id: connect-mobile
+      name: dsh-connect-mobile
+      config:
+        # bridge 监听端口（手机端「配置桥接地址」默认也找 8787）
+        port: 8787
+        # 是否在 DSH 启动时自动拉起 bridge（手动用 phone_bridge 工具也能起）
+        autoStart: false

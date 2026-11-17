@@ -1,0 +1,50 @@
+{
+  "name": "dsh-connect-mobile",
+  "version": "0.1.0",
+  "description": "手机工作台：把 Android 手机接进 DSH —— 侧栏「手机」预览面板（二维码/通道/状态）、起停电脑侧 bridge、在手机 DSH 页面执行 JS，并附带 DSH Mobile 纯净版 APK（dist/）。",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "client.js",
+    "bridge",
+    "dist",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "android",
+    "phone",
+    "bridge"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    },
+    "marketplace": {
+      "profiles": [
+        "web"
+      ],
+      "requiresBuildApproval": false,
+      "requiresRestart": true,
+      "manualSteps": false
+    }
+  }
+}
