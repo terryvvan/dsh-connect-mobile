@@ -2,6 +2,15 @@
 
 把 Android 手机接进 DSH：电脑侧 bridge（起/停/查）、通道清单、在手机 DSH 页面里执行 JS、以及随附的 **DSH Mobile 纯净版 APK**。
 
+## APK 在哪
+
+`dist/dsh-mobile-clean.apk`（317 MB）**不在 git 历史里** —— 它超出 GitHub 单文件 100 MB 硬限，而 GitHub LFS 的上传域 `github-cloud.s3.amazonaws.com` 在本机网络整段不可达。APK 改挂在 Release：
+
+- 下载：<https://github.com/terryvvan/dsh-connect-mobile/releases/tag/v0.8.309-clean>
+- 版本 / 字节数 / SHA-256 见 [`dist/apk-version.json`](dist/apk-version.json)
+- 下载后放回本目录的 `dist/dsh-mobile-clean.apk`，插件面板的 `phone_apk` 与「下载 APK」才会用到它（插件其余功能不依赖）
+- 也可以自己构建：`pwsh -File D:\dsh-mobile\tools\build-clean.ps1 -Bump`（产物直接落到 `dist/`）
+
 ## 装
 
 ```powershell
@@ -30,7 +39,7 @@ cmd /c mklink /J "$profile\local-plugins\dsh-connect-mobile" "D:\plugin\dsh\dsh-
 
 ## 手机侧怎么接
 
-1. 把 `dist/dsh-mobile-clean.apk` 装到手机上（或用 `adb install -r -d`）。
+1. 把 `dist/dsh-mobile-clean.apk` 装到手机上（没有就从上面 Release 下，或自己构建；也可用 `adb install -r -d`）。
 2. 打开 App → 「配置桥接地址」→ 扫码 / 填 `phone_bridge` 报的地址（默认 `http://<电脑 IP>:8787`，也可用 Tailscale 域名）。
 3. 首次同步后会下发人设/插件/记忆核心；纯净版自带 `dsh-memory-core`（无知识卡）、`dsh-purge`（红队模式）、`dsh-prompt-manager`，并带 Mika 的 71 份 App/网站知识库。
 

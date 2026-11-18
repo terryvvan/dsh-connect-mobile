@@ -6,8 +6,8 @@ bridge/bridge.log
 bridge/bridge.pid
 bridge/.slim-batches.json
 
-# 随包 APK 入库（走 git-lfs，见 .gitattributes）：插件面板的「下载 APK」直接取它
-# dist/*.apk
+# 随包 APK 不入库：317 MB 超出 GitHub 单文件 100 MB 硬限，挂在 GitHub Release（见 README「APK 在哪」）
+dist/*.apk
 
 # 打包产物 / 运行时下载的隧道工具，不入库（package.ps1 可重建、bridge 首次用时会自动下载）
 dist/*.zip
